@@ -63,12 +63,27 @@ def draw_grid():
       else:
         pygame.draw.rect(screen, "white", (j * grid_size, i * grid_size, grid_size - border_size, grid_size - border_size))
 
-def draw_wall(column, size):
+def draw_wall(column, distance):
+  if distance != 0:
+    inverted_distance = 1 / distance
+  else:
+    inverted_distance = 5000
+  size = inverted_distance*wall_res*50
+  distance_scale = size
+  print(size)
+
   size += wall_res / 2 # accounts for tile missing on bottom and top of screen
   column += 1 # deals with zero index multiplication problem
   # pygame.draw.rect(screen, "red", (column * column_size, //// size / wall_res, column_size, res - 2*(size / wall_res))) # needs work TODO TODO TODO
   y_offset = (wall_res-size)*(res/wall_res)
-  pygame.draw.rect(screen, "red", (column * column_size, y_offset, column_size+1, res - y_offset*2)) # needs work TODO TODO TODO
+
+  distance_scale = max(1, min(distance_scale, 10))
+  # calculate the red value. The scale inversely affects the red color.
+  min_red = 150
+  red_intensity = min_red + int((255 - min_red) * (distance_scale - 1) / 9)
+
+
+  pygame.draw.rect(screen, (red_intensity,0,0), (column * column_size, y_offset, column_size+1, res - y_offset*2)) 
 
 def draw_rays():
     # draw player
@@ -171,7 +186,18 @@ while running:
     draw_grid()
     draw_rays()
   else:
-    pygame.draw.rect(screen, "grey", (0, res/2, res, res))
+    """Draws a vertical gradient from color1 to color2."""
+    color1 = (200, 200, 200)  # Light grey
+    color2 = (50, 50, 50)  # Dark grey
+    for y in range(int(res/2), res, wall_res):
+      # calculate the color for the current band
+      r = color1[0] + (color2[0] - color1[0]) * (y / res)
+      g = color1[1] + (color2[1] - color1[1]) * (y / res)
+      b = color1[2] + (color2[2] - color1[2]) * (y / res)
+      # draw a rectangle for each pixel band
+      pygame.draw.rect(screen, (r, g, b), (0, y, res, wall_res))
+
+
     for i in range(1, ray_count):
       cur_theta = theta + ((fov / ray_count) * i)
 
@@ -192,12 +218,8 @@ while running:
       end_pos_y *= grid_size
       distance = math.sqrt((player_pos.x - end_pos_x) ** 2 + (player_pos.y - end_pos_y) ** 2)
 
-      if distance != 0:
-        inverted_distance = 1 / distance
-      else:
-        inverted_distance = 5000
 
-      draw_wall(i - 1, inverted_distance*wall_res*50)
+      draw_wall(i - 1, distance)
   
 
 
